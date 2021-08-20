@@ -2,6 +2,10 @@ import os
 import math
 import json
 import argparse
+import sys
+path = "/opt/ros/kinetic/lib/python2.7/dist-packages"
+if path in sys.path:
+  sys.path.remove(path)
 
 import cv2
 import torch
