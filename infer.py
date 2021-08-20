@@ -1,25 +1,25 @@
+from data.dataset import COCODataset
+from eval.coco_eval import COCOMetrics
+from trainer.builder import build, build_transform, build_postprocess
+import utils.timer as timer
+import utils.visualizer as visualizer_module
+import model as model_module
+import config as config_module
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+import torch.nn.functional as F
+import torch
+
+path = "/opt/ros/kinetic/lib/python2.7/dist-packages"
+if path in sys.path:
+    sys.path.remove(path)
+import cv2
 import os
 import math
 import json
 import argparse
 import sys
-path = "/opt/ros/kinetic/lib/python2.7/dist-packages"
-if path in sys.path:
-  sys.path.remove(path)
 
-import cv2
-import torch
-import torch.nn.functional as F
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-
-import config as config_module
-import model as model_module
-import utils.visualizer as visualizer_module
-import utils.timer as timer
-from trainer.builder import build, build_transform, build_postprocess
-from eval.coco_eval import COCOMetrics
-from data.dataset import COCODataset
 
 
 def pad(image, size_divisor=32, pad_value=0):
@@ -27,7 +27,8 @@ def pad(image, size_divisor=32, pad_value=0):
     new_height = int(math.ceil(height / size_divisor) * size_divisor)
     new_width = int(math.ceil(width / size_divisor) * size_divisor)
     pad_left, pad_top = (new_width - width) // 2, (new_height - height) // 2
-    pad_right, pad_down = new_width - width - pad_left, new_height - height - pad_top
+    pad_right, pad_down = new_width - width - \
+        pad_left, new_height - height - pad_top
 
     padding = [pad_left, pad_right, pad_top, pad_down]
     image = F.pad(image, padding, value=pad_value)
@@ -99,7 +100,8 @@ if __name__ == '__main__':
         if args.num_images:
             json_images = json_images[:args.num_images]
         file_names = [json_image['file_name'] for json_image in json_images]
-        image_files = [os.path.join(args.image_dir, file_name) for file_name in file_names]
+        image_files = [os.path.join(args.image_dir, file_name)
+                       for file_name in file_names]
         sample_infos = [{'height': json_image['height'],
                          'width': json_image['width'],
                          'id': json_image['id']} for json_image in json_images]
@@ -109,19 +111,22 @@ if __name__ == '__main__':
         )
     elif args.image_dir:
         if args.image_list:
-            file_names = [file_name.strip() for file_name in open(args.image_list)]
+            file_names = [file_name.strip()
+                          for file_name in open(args.image_list)]
         else:
             file_names = os.listdir(args.image_dir)
         if args.num_images:
             file_names = file_names[:args.num_images]
-        image_files = [os.path.join(args.image_dir, file_name) for file_name in file_names]
+        image_files = [os.path.join(args.image_dir, file_name)
+                       for file_name in file_names]
     else:
         raise ValueError('Either image or image_dir should be given.')
 
     # output files
     if args.output:
         os.makedirs(args.output, exist_ok=True)
-        output_files = [os.path.join(args.output, file_name) for file_name in file_names]
+        output_files = [os.path.join(args.output, file_name)
+                        for file_name in file_names]
     else:
         output_files = None
 
@@ -133,7 +138,8 @@ if __name__ == '__main__':
         model.eval()
         # warmup
         if args.benchmark:
-            src_image = cv2.cvtColor(cv2.imread(image_files[0]), cv2.COLOR_BGR2RGB)
+            src_image = cv2.cvtColor(cv2.imread(
+                image_files[0]), cv2.COLOR_BGR2RGB)
             src_image = torch.tensor(src_image, dtype=torch.float32).to(device)
             image = transform(src_image.unsqueeze(0))
             image, pad_info = pad(image)
@@ -149,8 +155,10 @@ if __name__ == '__main__':
                 # Load and transform image
                 # print(os.path.basename(image_file))
                 with timer.timer('Load data'):
-                    src_image = cv2.cvtColor(cv2.imread(image_file), cv2.COLOR_BGR2RGB)
-                    src_image = torch.tensor(src_image, dtype=torch.float32).to(device)
+                    src_image = cv2.cvtColor(
+                        cv2.imread(image_file), cv2.COLOR_BGR2RGB)
+                    src_image = torch.tensor(
+                        src_image, dtype=torch.float32).to(device)
                     image = transform(src_image.unsqueeze(0))
                     image, pad_info = pad(image)
 
@@ -162,14 +170,17 @@ if __name__ == '__main__':
                 # Convert to coco format
                 if args.json_file and args.output:
                     with timer.timer('Convert Format'):
-                        sample_info = [dict(sample_infos[idx], collate_pad=pad_info)]
-                        coco_format_dets = coco_metrics.to_coco_format(sample_info, predictions)
+                        sample_info = [
+                            dict(sample_infos[idx], collate_pad=pad_info)]
+                        coco_format_dets = coco_metrics.to_coco_format(
+                            sample_info, predictions)
                         coco_metrics.update_results(coco_format_dets)
 
                 # Visualizer
                 if args.visualize:
                     with timer.timer('Visualize'):
-                        show_image = visualizer(predictions[0], src_image, pad_info)
+                        show_image = visualizer(
+                            predictions[0], src_image, pad_info)
                         if args.show:
                             plt.imshow(show_image)
                         if args.output:

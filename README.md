@@ -71,6 +71,14 @@ CUDA_VISIBLE_DEVICES=0 python infer.py \
     -d coco/test2017 -l assets/test_dev_selected.txt -v -o outputs
 ```
 
+### ONNX Export
+
+```bash
+
+python3 onnx_export.py -c orienmask_yolo_coco_544_anchor4_fpn_plus_infer -w checkpoints/OrienMaskAnchor4FPNPlus/orienmask_yolo.pth
+
+```
+
 ### logs
 
 We provide two types of logs for monitoring the training process. The first is updated on the terminal which is also stored in a `train.log` file in the checkpoint directory. The other is the tensorboard whose statistics are kept in the checkpoint directory.

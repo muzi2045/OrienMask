@@ -32,6 +32,8 @@ share/python-wheels/
 *.egg
 MANIFEST
 outputs
+.vscode
+onnx_export
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
