@@ -49,12 +49,22 @@ if __name__ == '__main__':
         inputs = [input]
         inputs = tuple(inputs)
 
+        predictions = model(input)
+
+        print(type(predictions))
+        print(f" {predictions[0][0].shape}")
+        print(f" {predictions[0][1].shape}")
+
         ### there has three head output from model
         ## (bbox32, orien32) --> ([1, 255, 17, 17], [1, 6, 136, 136])
         #  (bbox16, orien16) --> ([1, 255, 34, 34], [1, 6, 136, 136])
         #  (bbox8, orien8)   --> ([1, 255, 68, 68], [1, 6, 136, 136])
-        torch.onnx.export(model, inputs,  "./onnx_export/orienmask_yolov3_fpn.onnx", verbose=False,
-                    input_names=input_names, export_params=True, keep_initializers_as_inputs=True, opset_version=11)
+        # torch.onnx.export(model, inputs,  "./onnx_export/orienmask_yolov3_fpn.onnx", verbose=False,
+        #             input_names=input_names, export_params=True, keep_initializers_as_inputs=True, opset_version=11)
+        predictions = postprocess(predictions)[0]
 
+        print(f" bbox shape: {predictions['bbox'].shape}")
+        print(f" mask shape: {predictions['mask'].shape}")
+        print(f" cls shape: {predictions['cls'].shape}")
 
         

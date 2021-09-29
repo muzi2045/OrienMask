@@ -72,19 +72,40 @@ class OrienMaskYOLOFPNPlus(BaseModel):
         )
 
     def forward(self, x):
+        '''
+         ([1, 1024, 17, 17])
+         ([1, 512, 34, 34])
+         ([1, 256, 68, 68])
+         ([1, 128, 136, 136])
+        '''
         x32, x16, x8, x4 = self.backbone(x)
 
+        ' ([1, 512, 17, 17])'
         neck32 = self.neck32(x32)
-        neck16 = self.neck16(torch.cat([self.route32(neck32), x16], dim=1))
-        neck8 = self.neck8(torch.cat([self.route16(neck16), x8], dim=1))
 
+        ' ([1, 256, 34, 34])'
+        neck16 = self.neck16(torch.cat([self.route32(neck32), x16], dim=1))
+
+        ' ([1, 128, 68, 68])'
+        neck8 = self.neck8(torch.cat([self.route16(neck16), x8], dim=1))
+        
+        ' ([1, 255, 17, 17])'
         bbox32 = self.bbox_head32(neck32)
+
+        ' ([1, 255, 34, 34])'
         bbox16 = self.bbox_head16(neck16)
+
+        ' ([1, 255, 68, 68])'
         bbox8 = self.bbox_head8(neck8)
 
+        ' ([1, 128, 136, 136])'
         oriens = self.neck4(torch.cat([self.skip32(neck32), self.skip16(neck16),
                                        self.skip8(neck8), self.skip4(x4)], dim=1))
+
+        ' ([1, 18, 136, 136])'
         oriens = self.orien_head(oriens)
+
+        ' ([1, 6, 136, 136]) --  ([1, 6, 136, 136]) --  ([1, 6, 136, 136])'
         orien32, orien16, orien8 = torch.split(oriens, self.num_anchors * 2, dim=1)
 
         return (bbox32, orien32), (bbox16, orien16), (bbox8, orien8)
