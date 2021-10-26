@@ -4,11 +4,13 @@ from trainer.builder import build, build_transform, build_postprocess
 import model as model_module
 import config as config_module
 import utils.visualizer as visualizer_module
+import numpy as np
 
 import torch
 import json
 import argparse
 import sys
+
 path = "/opt/ros/kinetic/lib/python2.7/dist-packages"
 if path in sys.path:
     sys.path.remove(path)
@@ -33,20 +35,26 @@ def pad(image, size_divisor=32, pad_value=0):
 
     return image, pad_info
 
+
 if __name__ == '__main__':
     # Argument parsing
     parser = argparse.ArgumentParser(description='Model Inference')
-    parser.add_argument('-c', '--config', default=None, type=str,
+    parser.add_argument('-c',
+                        '--config',
+                        default=None,
+                        type=str,
                         help='inference config (default: None)')
-    parser.add_argument('-w', '--weights', default=None, type=str,
+    parser.add_argument('-w',
+                        '--weights',
+                        default=None,
+                        type=str,
                         help='model weights to inference (default: None)')
     args = parser.parse_args()
 
+    config_name = "orienmask_yolo_coco_544_anchor4_fpn_plus_infer"
+    weight_path = "checkpoints/OrienMaskAnchor4FPNPlus/orienmask_yolo.pth"
     # Load config
-    if args.config.endswith('.json'):
-        config = json.load(open(args.config))
-    else:
-        config = getattr(config_module, args.config)
+    config = getattr(config_module, config_name)
 
     # Device
     use_cuda = config['n_gpu'] > 0
@@ -60,7 +68,7 @@ if __name__ == '__main__':
     # Build model, transform and postprocess
     config['model']['pretrained'] = None
     model = build(config['model'], model_module).to(device)
-    weights = torch.load(args.weights, map_location=device)
+    weights = torch.load(weight_path, map_location=device)
     weights = weights['state_dict'] if 'state_dict' in weights else weights
     model.load_state_dict(weights, strict=True)
     config['transform']['use_cuda'] = use_cuda
@@ -68,36 +76,52 @@ if __name__ == '__main__':
     postprocess = build_postprocess(config['postprocess'], device=device)
     visualizer = build(config['visualizer'], visualizer_module, device=device)
 
-    img_path = "/home/muzi2045/Pictures/ros_output/yf_gc_day/frame0626.jpg"
+    img_path = "/home/muzi2045/Documents/project/tensorrtx/orienmask/samples/test.jpg"
 
     with torch.no_grad():
         model.eval()
         src_image = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
         original_image = cv2.imread(img_path)
-        
-        src_image = torch.tensor(
-            src_image, dtype=torch.float32).to(device)
-        
-        original_image = torch.tensor(
-            original_image, dtype=torch.float32).to(device)
+
+        src_image = torch.tensor(src_image, dtype=torch.float32).to(device)
+
+        original_image = torch.tensor(original_image,
+                                      dtype=torch.float32).to(device)
+        print(src_image.shape)
 
         image = transform(src_image.unsqueeze(0))
+
+        print(image.shape)
+        print(type(image))
+        out_img = image.permute(0, 2, 3, 1).cpu().numpy()
+
+        np.savetxt("image_input.txt",
+                   out_img.reshape((-1, 3)),
+                   fmt="%.3f",
+                   delimiter=',')
+        
         image, pad_info = pad(image)
-        
+
         prediction = model(image)
-        final_output = postprocess(prediction)
+        bbox32 = prediction[0][0].cpu().numpy()
 
-        print(final_output[0]['bbox'].shape)
-        print(final_output[0]['mask'].shape)
-        print(final_output[0]['cls'].shape)
-
-        show_image = visualizer(final_output[0], original_image, pad_info)
+        # np.savetxt("orienmask_bbox32.txt",
+        #            bbox32.reshape((255, -1)),
+        #            fmt="%.5f",
+        #            delimiter=',')
         
-        print(f" bbox shape: {final_output[0]['bbox'].shape}")
-        print(f" mask shape: {final_output[0]['mask'].shape}")
-        print(f" cls shape: {final_output[0]['cls'].shape}")
+        # for i in range(3):
+        #   for j in range(2):
+        # print(f" { prediction[i][j].shape }")
 
-        cv2.imshow("test", show_image)
-        cv2.waitKey()
-        cv2.destroyAllWindows()
-        
+        # final_output = postprocess(prediction)
+
+        # show_image = visualizer(final_output[0], original_image, pad_info)
+
+        # print(f" bbox shape: {final_output[0]['bbox'].shape}")
+        # print(f" mask shape: {final_output[0]['mask'].shape}")
+        # print(f" cls shape: {final_output[0]['cls'].shape}")
+
+        # cv2.imshow("test", show_image)
+        # cv2.waitKey()
+        # cv2.destroyAllWindows()

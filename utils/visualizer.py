@@ -65,13 +65,13 @@ class InferenceVisualizer:
 
             if self.with_mask:
                 all_mask = self._recover_shape_segm(mask_dets, width, height, pad_info)
-                sorted_indices = all_mask.sum(dim=2).sum(dim=1).argsort()
+                sorted_indices = all_mask.sum(dim=2).sum(dim=1).argsort()                
                 all_mask = all_mask[sorted_indices]
                 self.plot_all_mask(all_mask, pred_show, colors[sorted_indices])
 
             pred_show = pred_show.round().to(torch.uint8).cpu().numpy()
             for xyxy, score, cls, color in zip(all_xyxy, all_score, all_cls, colors):
-                print(xyxy.tolist(), score.item(), cls)
+                # print(xyxy.tolist(), score.item(), cls)
                 text = '%s %.2f' % (cls, score.item())
                 self.plot_one_box(xyxy, text, pred_show, color=color.tolist())
         else:

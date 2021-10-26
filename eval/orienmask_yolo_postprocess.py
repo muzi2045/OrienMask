@@ -77,9 +77,11 @@ class OrienMaskYOLOPostProcess:
             dets_orien = torch.zeros_like(self.base_xy)
             for i in range(self.scales):
                 pred_bbox, pred_orien = pred_bbox_batch[i][b], pred_orien_batch[i][b]
+                print(f" {pred_bbox.shape} - {pred_orien.shape}")
                 nA = self.num_anchors[i]
                 nH, nW = self.nHs[i], self.nWs[i]
                 anchor_mask = self.anchor_mask[i]
+                print(f" nA nH nW anchor: {nA} - {nH} - {nW} - {anchor_mask}")
                 anchors = self.normalized_anchors[anchor_mask]
                 grid_x, grid_y = self.grid_x[i], self.grid_y[i]
 
