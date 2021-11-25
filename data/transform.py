@@ -456,7 +456,9 @@ class FastCOCOTransform(BaseTransform):
         if self.device != image.device:
             image = image.to(self.device)
         image = image.permute(0, 3, 1, 2).contiguous()
+        print(f" { image.shape }")
         image = self.pipeline(image)
+        print(f" { image.shape }")
         return image
 
     class Resize:
@@ -469,6 +471,13 @@ class FastCOCOTransform(BaseTransform):
         def __call__(self, image):
             image = nn.functional.interpolate(image, size=self.size, mode=self.interpolation,
                                               align_corners=self.align_corners)
+            print(f" {image.shape}")
+            test_img = image.permute(0, 2, 3, 1).cpu().numpy()
+
+            np.savetxt("image_input_after_resize.txt",
+                   test_img.reshape((-1, 3)),
+                   fmt="%.3f",
+                   delimiter=',')
             return image
 
         def __repr__(self):

@@ -80,48 +80,48 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         model.eval()
-        src_image = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
         original_image = cv2.imread(img_path)
-
-        src_image = torch.tensor(src_image, dtype=torch.float32).to(device)
-
         original_image = torch.tensor(original_image,
                                       dtype=torch.float32).to(device)
-        print(src_image.shape)
-
-        image = transform(src_image.unsqueeze(0))
-
-        print(image.shape)
-        print(type(image))
-        out_img = image.permute(0, 2, 3, 1).cpu().numpy()
-
-        np.savetxt("image_input.txt",
-                   out_img.reshape((-1, 3)),
-                   fmt="%.3f",
-                   delimiter=',')
         
+        src_image = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
+        src_image = torch.tensor(src_image, dtype=torch.float32).to(device)
+        image = transform(src_image.unsqueeze(0))
+        # print(image.shape)
+        # print(type(image))
+      
         image, pad_info = pad(image)
+        # print(f"padded image size: {image.shape}")
+        # out_img = image.permute(0, 2, 3, 1).cpu().numpy()
+        # np.savetxt("image_input_padded.txt",
+        #            out_img.reshape((-1, 3)),
+        #            fmt="%.6f",
+        #            delimiter=',')
 
         prediction = model(image)
-        bbox32 = prediction[0][0].cpu().numpy()
+        bbox32 = prediction[0][0]
+        orien32 = prediction[0][1]
 
-        # np.savetxt("orienmask_bbox32.txt",
-        #            bbox32.reshape((255, -1)),
-        #            fmt="%.5f",
-        #            delimiter=',')
-        
-        # for i in range(3):
-        #   for j in range(2):
-        # print(f" { prediction[i][j].shape }")
+        print(f"bbox32 size: {bbox32.shape}")
+        print(f"orien32 size: {orien32.shape}")
 
-        # final_output = postprocess(prediction)
+        bbox32 = bbox32.permute(0, 2, 3, 1).cpu().numpy()
+        orien32 = orien32.permute(0, 2, 3, 1).cpu().numpy()
 
-        # show_image = visualizer(final_output[0], original_image, pad_info)
+        np.savetxt("orienmask_bbox32.txt",
+                   bbox32.reshape((-1, 255)),
+                   fmt="%.6f",
+                   delimiter=',')
 
+        np.savetxt("orienmask_orien32.txt",
+            orien32.reshape((-1, 6)),
+            fmt="%.6f",
+            delimiter=',')
+        final_output = postprocess(prediction)
+        show_image = visualizer(final_output[0], original_image, pad_info)
         # print(f" bbox shape: {final_output[0]['bbox'].shape}")
         # print(f" mask shape: {final_output[0]['mask'].shape}")
         # print(f" cls shape: {final_output[0]['cls'].shape}")
-
-        # cv2.imshow("test", show_image)
-        # cv2.waitKey()
-        # cv2.destroyAllWindows()
+        cv2.imshow("test", show_image)
+        cv2.waitKey()
+        cv2.destroyAllWindows()
